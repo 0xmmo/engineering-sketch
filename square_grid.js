@@ -20,9 +20,12 @@ $(document).ready(function(){
 	ctx.fillStyle = 'rgba(0,0,0,0.3)';
 	ctx.strokeStyle = 'rgba(0,0,0,0.5)';
 	ctx.lineWidth = 2;
+
+	arcTool = false;
 	
 	points = [];
 	lines = [];
+	arcs = [];
 
 	$(document).mousedown(function(evt) {
 		mouseD = true;
@@ -38,7 +41,36 @@ $(document).ready(function(){
 		upMouseX = Math.round(evt.pageX/spacing)*spacing;
 		upMouseY = Math.round(evt.pageY/spacing)*spacing;
 
-		lines.push([downMouseX,downMouseY,upMouseX,upMouseY,lineStyle]);
+		// lines.push([downMouseX,downMouseY,upMouseX,upMouseY,lineStyle]);
+
+		if(arcTool){
+			if(upMouseX !== downMouseX && upMouseY !== downMouseY){ // Quarter circle
+				var radius = Math.abs(upMouseY-downMouseY);
+
+				if(upMouseX<downMouseX && upMouseY>downMouseY){
+					var centerX = upMouseX;
+					var centerY = downMouseY;
+					var startAngle = 0;
+				}else if(upMouseX<downMouseX && upMouseY<downMouseY){
+					var centerX = downMouseX;
+					var centerY = upMouseY;
+					var startAngle = 0.5*Math.PI;
+				}else if(upMouseX>downMouseX && upMouseY<downMouseY){
+					var centerX = upMouseX;
+					var centerY = downMouseY;
+					var startAngle = Math.PI;
+				}else if(upMouseX>downMouseX && upMouseY>downMouseY){
+					var centerX = downMouseX;
+					var centerY = upMouseY;
+					var startAngle = 1.5*Math.PI;
+				}
+
+				arcs.push([centerX, centerY, radius, startAngle, startAngle+0.5*Math.PI,lineStyle]);
+ 
+			}
+		}else{
+			lines.push([downMouseX,downMouseY,upMouseX,upMouseY,lineStyle]);
+		}
 
 		draw();
 
@@ -51,7 +83,37 @@ $(document).ready(function(){
 			currentMouseX = Math.round(evt.pageX/spacing)*spacing;
 			currentMouseY = Math.round(evt.pageY/spacing)*spacing;
 
-			currentLine = [downMouseX,downMouseY,currentMouseX,currentMouseY,lineStyle];
+			if(arcTool){
+				if(currentMouseX !== downMouseX && currentMouseY !== downMouseY){ // Quarter circle
+					var radius = Math.abs(currentMouseY-downMouseY);
+
+					if(currentMouseX<downMouseX && currentMouseY>downMouseY){
+						var centerX = currentMouseX;
+						var centerY = downMouseY;
+						var startAngle = 0;
+					}else if(currentMouseX<downMouseX && currentMouseY<downMouseY){
+						var centerX = downMouseX;
+						var centerY = currentMouseY;
+						var startAngle = 0.5*Math.PI;
+					}else if(currentMouseX>downMouseX && currentMouseY<downMouseY){
+						var centerX = currentMouseX;
+						var centerY = downMouseY;
+						var startAngle = Math.PI;
+					}else if(currentMouseX>downMouseX && currentMouseY>downMouseY){
+						var centerX = downMouseX;
+						var centerY = currentMouseY;
+						var startAngle = 1.5*Math.PI;
+					}
+
+					currentArc = [centerX, centerY, radius, startAngle, startAngle+0.5*Math.PI,lineStyle];
+				
+				}else{
+					currentArc = [0, 0, 0, 0, 0,lineStyle];
+				}
+
+			}else{
+				currentLine = [downMouseX,downMouseY,currentMouseX,currentMouseY,lineStyle];
+			}
 
 			draw();
 
@@ -63,7 +125,11 @@ $(document).ready(function(){
 
 		if (evt.keyCode == 8) {
 
-			lines.pop();
+			if(arcTool){
+				arcs.pop();
+			}else{
+				lines.pop();
+			}
 
 			draw();
 		}
@@ -73,6 +139,12 @@ $(document).ready(function(){
 			lineStyle = lineStyle === "solid" ? "dashed" : "solid";
 
 			setLineStyle(lineStyle);
+
+		}
+
+		if (evt.keyCode == 65) {
+
+			arcTool = arcTool ? false : true;
 
 		}
 
@@ -102,13 +174,28 @@ function draw(){
 		ctx.stroke();
 	}
 
+	for(var n=0; n<arcs.length; n++){
+
+		setLineStyle(arcs[n][5]);
+
+		ctx.beginPath();
+		ctx.arc(arcs[n][0], arcs[n][1], arcs[n][2], arcs[n][3], arcs[n][4]);  // Create an arc
+		ctx.stroke();
+	}
+
 	setLineStyle(lineStyle);
 
-	if(mouseD){		
-		ctx.beginPath();
-		ctx.moveTo(currentLine[0],currentLine[1]);
-		ctx.lineTo(currentLine[2],currentLine[3]);
-		ctx.stroke();
+	if(mouseD){
+		if(arcTool){
+			ctx.beginPath();
+			ctx.arc(currentArc[0], currentArc[1], currentArc[2], currentArc[3], currentArc[4]);  // Create an arc
+			ctx.stroke();
+		}else{
+			ctx.beginPath();
+			ctx.moveTo(currentLine[0],currentLine[1]);
+			ctx.lineTo(currentLine[2],currentLine[3]);
+			ctx.stroke();
+		}
 	}
 
 }
